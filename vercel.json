@@ -1,5 +1,11 @@
 {
-  "buildCommand": "npm ci && npm run build",
   "outputDirectory": "lawVerse_ai/dist",
-  "framework": "vite"
+  "framework": "vite",
+  "installCommand": "npm install && cd lawVerse_ai && npm install",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
