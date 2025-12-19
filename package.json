@@ -1,4 +1,13 @@
 {
+  "name": "lawverse-root",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Root package to build the LawVerse AI app in the lawVerse_ai subfolder on Vercel",
+  "scripts": {
+    "dev": "cd lawVerse_ai && npm run dev",
+    "build": "cd lawVerse_ai && npm ci && npm run build",
+    "preview": "cd lawVerse_ai && npm run preview"
+  },
   "dependencies": {
     "firebase": "^12.6.0"
   }
