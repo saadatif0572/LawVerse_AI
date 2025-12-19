@@ -1,7 +1,7 @@
 {
   "outputDirectory": "lawVerse_ai/dist",
   "framework": "vite",
-  "installCommand": "npm install && cd lawVerse_ai && npm install",
+  "installCommand": "npm ci && cd lawVerse_ai && npm ci",
   "rewrites": [
     {
       "source": "/(.*)",
