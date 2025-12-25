@@ -1,15 +1,20 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
+import { auth } from '../../firebase/config'
 
 const SignIn = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [message, setMessage] = useState('') // <--- State for success messages
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setMessage('')
 
     if (!email || !password) {
       setError('Please provide both email and password')
@@ -17,15 +22,49 @@ const SignIn = () => {
     }
 
     setLoading(true)
-    setTimeout(() => {
+    
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+      navigate('/') 
+    } catch (err) {
+      console.error(err)
+      if(err.code === 'auth/invalid-credential') {
+        setError('Incorrect email or password.')
+      } else {
+        setError(err.message)
+      }
+    } finally {
       setLoading(false)
-      setError('Authentication is currently disabled.')
-    }, 400)
+    }
   }
+
+  // --- NEW FUNCTION: Handles Password Reset ---
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+
+    if (!email) {
+      setError('Please enter your email address in the field above to reset your password.');
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setMessage('Password reset email sent! Check your inbox.');
+    } catch (err) {
+      console.error(err);
+      if (err.code === 'auth/user-not-found') {
+        setError('No account found with this email.');
+      } else {
+        setError(err.message);
+      }
+    }
+  };
+  // ---------------------------------------------
 
   return (
     <main className="relative overflow-hidden animated-gradient" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      {/* Floating particles background animation */}
       <div className="floating-particles">
         <div className="particle"></div>
         <div className="particle"></div>
@@ -61,9 +100,17 @@ const SignIn = () => {
                 <p style={{ marginTop: 6, color: '#92bcd6' }}>Sign in to your account</p>
               </div>
 
+              {/* Error Message Display */}
               {error && (
                 <div style={{ background: 'rgba(255,68,68,0.12)', border: '1px solid rgba(255,68,68,0.2)', color: '#ffb3b3', padding: '0.75rem 1rem', borderRadius: 6, marginBottom: 12 }}>
                   {error}
+                </div>
+              )}
+
+              {/* Success Message Display */}
+              {message && (
+                <div style={{ background: 'rgba(0, 212, 255, 0.12)', border: '1px solid rgba(0, 212, 255, 0.2)', color: '#00d4ff', padding: '0.75rem 1rem', borderRadius: 6, marginBottom: 12 }}>
+                  {message}
                 </div>
               )}
 
@@ -90,7 +137,15 @@ const SignIn = () => {
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input type="checkbox" /> <span>Remember me</span>
                   </label>
-                  <Link to="#" style={{ color: '#00d4ff', textDecoration: 'none' }}>Forgot?</Link>
+                  
+                  {/* Updated Forgot Password Link */}
+                  <button 
+                    onClick={handleResetPassword}
+                    style={{ background: 'none', border: 'none', color: '#00d4ff', cursor: 'pointer', padding: 0, fontSize: 'inherit' }}
+                    type="button"
+                  >
+                    Forgot?
+                  </button>
                 </div>
 
                 <button type="submit" disabled={loading} style={{ marginTop: 6, padding: '0.75rem 1rem', borderRadius: 8, background: '#00d4ff', color: '#07202a', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
@@ -103,7 +158,6 @@ const SignIn = () => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </main>

@@ -1,5 +1,9 @@
+// src/pages/SignUp.js
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom' // Added useNavigate
+import { auth, db } from '../../firebase/config' // Import auth and db
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { doc, setDoc } from 'firebase/firestore'
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +17,7 @@ const SignUp = () => {
   const [errors, setErrors] = useState({})
   const [submitError, setSubmitError] = useState('')
   const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -43,22 +48,50 @@ const SignUp = () => {
     return newErrors
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => { // Made async
     e.preventDefault()
     setSubmitError('')
     const newErrors = validateForm()
 
     if (Object.keys(newErrors).length === 0) {
       setLoading(true)
-      setTimeout(() => {
+      try {
+        // 1. Create User in Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password)
+        const user = userCredential.user;
+
+        // 2. Update Display Name in Auth Profile
+        await updateProfile(user, {
+            displayName: `${formData.firstName} ${formData.lastName}`
+        });
+
+        // 3. Save extra details (Names) to Firestore Database
+        await setDoc(doc(db, "users", user.uid), {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            createdAt: new Date()
+        });
+
+        // 4. Redirect
+        navigate('/')
+
+      } catch (err) {
+        console.error(err)
+        if(err.code === 'auth/email-already-in-use') {
+            setSubmitError('This email is already registered.')
+        } else {
+            setSubmitError(err.message)
+        }
+      } finally {
         setLoading(false)
-        setSubmitError('Authentication is currently disabled.')
-      }, 900)
+      }
     } else {
       setErrors(newErrors)
     }
   }
 
+  // ... (The rest of your return JSX remains exactly the same)
   return (
     <main className="relative overflow-hidden animated-gradient" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
       {/* Floating particles background animation */}
