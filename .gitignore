@@ -13,12 +13,23 @@ lerna-debug.log*
 
 # Firebase
 .firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
 
 # Dependencies & builds
 node_modules/
 dist/
 dist-ssr/
+.vite/
+coverage/
+.eslintcache
+.parcel-cache/
 *.local
+
+# Hosting / deploy
+.vercel/
+.netlify/
 
 # Editor directories and files
 .vscode/
