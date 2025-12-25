@@ -6,7 +6,6 @@ const Footer = () => {
       borderTop: '2px solid #00d4ff',
       marginTop: 'auto',
       padding: '2rem',
-      marginTop: 'auto'
     }}>
       <div style={{
         maxWidth: '1280px',

@@ -1,23 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { auth } from '../../firebase/config'
-
-const getAuthErrorMessage = (error) => {
-  const code = error?.code
-  switch (code) {
-    case 'auth/email-already-in-use':
-      return 'An account with this email already exists'
-    case 'auth/invalid-email':
-      return 'Please enter a valid email address'
-    case 'auth/weak-password':
-      return 'Password is too weak. Use at least 6 characters.'
-    case 'auth/network-request-failed':
-      return 'Network error. Check your connection and try again.'
-    default:
-      return error?.message || 'Unable to create account. Please try again.'
-  }
-}
+import { Link } from 'react-router-dom'
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -29,8 +11,8 @@ const SignUp = () => {
     agreeTerms: false,
   })
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState('')
   const [loading, setLoading] = useState(false)
-  const navigate = useNavigate()
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -39,6 +21,7 @@ const SignUp = () => {
       [name]: type === 'checkbox' ? checked : value
     }))
     setErrors(prev => ({ ...prev, [name]: '' }))
+    setSubmitError('')
   }
 
   const passwordStrength = useMemo(() => {
@@ -60,24 +43,17 @@ const SignUp = () => {
     return newErrors
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
+    setSubmitError('')
     const newErrors = validateForm()
 
     if (Object.keys(newErrors).length === 0) {
       setLoading(true)
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password)
-        const displayName = `${formData.firstName} ${formData.lastName}`.trim()
-        if (displayName) {
-          await updateProfile(userCredential.user, { displayName })
-        }
-        navigate('/')
-      } catch (err) {
-        setErrors({ form: getAuthErrorMessage(err) })
-      } finally {
+      setTimeout(() => {
         setLoading(false)
-      }
+        setSubmitError('Authentication is currently disabled.')
+      }, 900)
     } else {
       setErrors(newErrors)
     }
@@ -115,9 +91,9 @@ const SignUp = () => {
               <p style={{ marginTop: 6, color: '#9fbccf' }}>Start your free trial — no credit card required</p>
             </div>
 
-            {errors.form && (
+            {submitError && (
               <div style={{ background: 'rgba(255,68,68,0.12)', border: '1px solid rgba(255,68,68,0.2)', color: '#ffb3b3', padding: '0.75rem 1rem', borderRadius: 6, marginBottom: 12 }}>
-                {errors.form}
+                {submitError}
               </div>
             )}
 

@@ -1,37 +1,13 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth'
-import { auth } from '../../firebase/config'
-
-const getAuthErrorMessage = (error) => {
-  const code = error?.code
-  switch (code) {
-    case 'auth/invalid-credential':
-    case 'auth/wrong-password':
-    case 'auth/user-not-found':
-      return 'Invalid email or password'
-    case 'auth/invalid-email':
-      return 'Please enter a valid email address'
-    case 'auth/user-disabled':
-      return 'This account has been disabled'
-    case 'auth/too-many-requests':
-      return 'Too many attempts. Please try again later.'
-    case 'auth/network-request-failed':
-      return 'Network error. Check your connection and try again.'
-    default:
-      return error?.message || 'Unable to sign in. Please try again.'
-  }
-}
+import { Link } from 'react-router-dom'
 
 const SignIn = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     setError('')
 
@@ -41,15 +17,10 @@ const SignIn = () => {
     }
 
     setLoading(true)
-    try {
-      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
-      await signInWithEmailAndPassword(auth, email, password)
-      navigate('/')
-    } catch (err) {
-      setError(getAuthErrorMessage(err))
-    } finally {
+    setTimeout(() => {
       setLoading(false)
-    }
+      setError('Authentication is currently disabled.')
+    }, 400)
   }
 
   return (
@@ -117,7 +88,7 @@ const SignIn = () => {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: '#9fbccf' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} /> <span>Remember me</span>
+                    <input type="checkbox" /> <span>Remember me</span>
                   </label>
                   <Link to="#" style={{ color: '#00d4ff', textDecoration: 'none' }}>Forgot?</Link>
                 </div>
@@ -133,10 +104,6 @@ const SignIn = () => {
             </div>
           </div>
 
-          {/* Demo / small info */}
-          <div style={{ textAlign: 'center', color: '#9fbccf', fontSize: 13 }}>
-            <small>Demo: demo@lawverse.com / demo123</small>
-          </div>
         </div>
       </div>
     </main>
