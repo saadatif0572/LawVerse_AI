@@ -4,9 +4,13 @@ import NewsletterSignup from "../views/NewsletterSignup";
 import PricingCards from "../views/PricingCards";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../../firebase/config";
+import { useAuth } from "../commons/AuthProvider";
+import { Link } from "react-router-dom";
 
 const Contact = () => {
+  const { user } = useAuth();
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   // 1. useState to store 6 project-relevant fields
   const [formData, setFormData] = useState({
@@ -26,13 +30,28 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    setSubmitError("");
+    if (!user) {
+      setSubmitError("Please sign in to submit this form.");
+      return;
+    }
+
     // 2. Log the collected data as a clean JavaScript object to the console
     console.log("--- LawVerse AI Form Submission ---");
     console.log(formData);
-    // store this form data to firestore
-    const docRef = await addDoc(collection(db, "lawyers"), formData);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 5000);
+
+    try {
+      await addDoc(collection(db, "contactMessages"), {
+        ...formData,
+        ownerId: user.uid,
+        createdAt: new Date().toISOString(),
+      });
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err) {
+      console.error(err);
+      setSubmitError(err?.message || "Failed to submit form.");
+    }
   };
  
   // Consistent Tailwind styles for a "Legal Tech" look
@@ -67,6 +86,17 @@ const Contact = () => {
               onSubmit={handleSubmit}
               className="space-y-6 bg-[#16243a] p-8 rounded-xl border border-gray-800 shadow-2xl"
             >
+              {!user && (
+                <div className="rounded-md border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+                  Please <Link to="/signin" className="text-cyan-300 font-semibold underline">sign in</Link> or{' '}
+                  <Link to="/signup" className="text-cyan-300 font-semibold underline">sign up</Link> to fill this form.
+                </div>
+              )}
+              {submitError && (
+                <div className="rounded-md border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {submitError}
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Field 1: Name */}
                 <div>
@@ -78,6 +108,7 @@ const Contact = () => {
                     onChange={handleChange}
                     placeholder="Attorney Name"
                     className={inputStyle}
+                    disabled={!user}
                     required
                   />
                 </div>
@@ -92,6 +123,7 @@ const Contact = () => {
                     onChange={handleChange}
                     placeholder="name@firm.com"
                     className={inputStyle}
+                    disabled={!user}
                     required
                   />
                 </div>
@@ -108,6 +140,7 @@ const Contact = () => {
                     onChange={handleChange}
                     placeholder="Legal Group LLC"
                     className={inputStyle}
+                    disabled={!user}
                     required
                   />
                 </div>
@@ -119,6 +152,7 @@ const Contact = () => {
                     name="practiceArea"
                     value={formData.practiceArea}
                     onChange={handleChange}
+                    disabled={!user}
                     className={inputStyle}
                   >
                     <option value="Corporate">Corporate Law</option>
@@ -146,6 +180,7 @@ const Contact = () => {
                           value={type}
                           checked={formData.inquiryType === type}
                           onChange={handleChange}
+                          disabled={!user}
                           className="text-cyan-400 focus:ring-cyan-400 bg-gray-700 border-gray-600"
                         />
                         <span className="text-gray-300 text-sm">{type}</span>
@@ -165,12 +200,14 @@ const Contact = () => {
                   placeholder="Describe your legal automation needs..."
                   rows="4"
                   className={inputStyle}
+                  disabled={!user}
                   required
                 />
               </div>
 
               <button
                 type="submit"
+                disabled={!user}
                 className="w-full bg-cyan-400 hover:bg-cyan-300 text-[#0f1c2e] font-black py-4 rounded-md transition-all transform hover:scale-[1.01] active:scale-95 shadow-lg"
               >
                 REQUEST SMART ASSISTANCE

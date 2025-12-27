@@ -1,0 +1,69 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(ownerId) {
+      return signedIn() && ownerId == request.auth.uid;
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if signedIn() && (isAdmin() || request.auth.uid == userId);
+
+      // User can create their own profile doc; role must be 'user'
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && (request.resource.data.role == 'user' || !('role' in request.resource.data));
+
+      // User can update their own profile but cannot change role; admin can update anything
+      allow update: if signedIn() && (
+        isAdmin() || (
+          request.auth.uid == userId
+          && request.resource.data.role == resource.data.role
+        )
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Generic app records (used by dashboards)
+    match /records/{recordId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn() && (
+        isAdmin() || request.resource.data.ownerId == request.auth.uid
+      );
+
+      allow update, delete: if signedIn() && (
+        isAdmin() || resource.data.ownerId == request.auth.uid
+      );
+    }
+
+    // Lawyers catalog: public read, restricted writes
+    match /lawyers/{lawyerId} {
+      allow read: if true;
+
+      allow create: if signedIn() && (
+        isAdmin() || request.resource.data.ownerId == request.auth.uid
+      );
+
+      allow update, delete: if signedIn() && (
+        isAdmin() || resource.data.ownerId == request.auth.uid
+      );
+    }
+
+    // Contact submissions (authenticated create; admin can read/manage)
+    match /contactMessages/{messageId} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

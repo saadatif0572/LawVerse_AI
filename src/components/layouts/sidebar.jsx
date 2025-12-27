@@ -1,4 +1,10 @@
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../commons/AuthProvider'
+
 const Sidebar = () => {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
   return (
     <aside style={{
       background: '#051b3d',
@@ -9,97 +15,49 @@ const Sidebar = () => {
       display: 'none',
       width: '256px'
     }}>
-      <p style={{
-        fontWeight: 'bold',
-        color: '#00d4ff',
-        marginBottom: '1.5rem'
-      }}>📚 Features</p>
-      <ul style={{ listStyle: 'none' }}>
-        <li style={{
-          padding: '0.75rem',
-          borderRadius: '4px',
-          borderLeft: '4px solid #00d4ff',
-          backgroundColor: 'rgba(0, 212, 255, 0.1)',
-          color: '#64b5f6',
-          cursor: 'pointer',
-          transition: 'all 0.3s',
-          marginBottom: '0.5rem'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.color = '#00d4ff'
-          e.target.style.backgroundColor = 'rgba(0, 212, 255, 0.2)'
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.color = '#64b5f6'
-          e.target.style.backgroundColor = 'rgba(0, 212, 255, 0.1)'
-        }}
+      {!user && (
+        <div
+          style={{
+            borderRadius: 12,
+            border: '1px solid rgba(0, 212, 255, 0.25)',
+            background: 'rgba(0, 212, 255, 0.08)',
+            padding: '1rem',
+            color: '#cfefff',
+          }}
         >
-          <span style={{ color: '#00d4ff', marginRight: '0.5rem' }}>⚡</span> Instant Legal Insights
-        </li>
-        <li style={{
-          padding: '0.75rem',
-          borderRadius: '4px',
-          borderLeft: '4px solid #00d4ff',
-          backgroundColor: 'rgba(0, 212, 255, 0.1)',
-          color: '#64b5f6',
-          cursor: 'pointer',
-          transition: 'all 0.3s',
-          marginBottom: '0.5rem'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.color = '#00d4ff'
-          e.target.style.backgroundColor = 'rgba(0, 212, 255, 0.2)'
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.color = '#64b5f6'
-          e.target.style.backgroundColor = 'rgba(0, 212, 255, 0.1)'
-        }}
+          <div style={{ fontWeight: 900, letterSpacing: 0.2, marginBottom: 8 }}>
+            Legal Quick Note
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: '#b7e9ff' }}>
+            Laws and procedures can change by jurisdiction. Always verify:
+            <ul style={{ marginTop: 8, paddingLeft: 18, color: '#b7e9ff' }}>
+              <li>dates, deadlines, and limitation periods</li>
+              <li>who has authority to sign and bind parties</li>
+              <li>privacy/confidentiality obligations before sharing documents</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {user && (
+        <button
+          type="button"
+          onClick={() => navigate('/add-lawyer')}
+          className="neon-hover"
+          style={{
+            width: '100%',
+            padding: '0.75rem 1rem',
+            borderRadius: 10,
+            background: 'rgba(0, 212, 255, 0.12)',
+            color: '#cfefff',
+            fontWeight: 800,
+            border: '1px solid rgba(0, 212, 255, 0.35)',
+            cursor: 'pointer',
+          }}
         >
-          <span style={{ color: '#00d4ff', marginRight: '0.5rem' }}>🔒</span> Secure Document Analysis
-        </li>
-        <li style={{
-          padding: '0.75rem',
-          borderRadius: '4px',
-          borderLeft: '4px solid #00d4ff',
-          backgroundColor: 'rgba(0, 212, 255, 0.1)',
-          color: '#64b5f6',
-          cursor: 'pointer',
-          transition: 'all 0.3s',
-          marginBottom: '0.5rem'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.color = '#00d4ff'
-          e.target.style.backgroundColor = 'rgba(0, 212, 255, 0.2)'
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.color = '#64b5f6'
-          e.target.style.backgroundColor = 'rgba(0, 212, 255, 0.1)'
-        }}
-        >
-          <span style={{ color: '#00d4ff', marginRight: '0.5rem' }}>📋</span> Contract Review
-        </li>
-        <li style={{
-          padding: '0.75rem',
-          borderRadius: '4px',
-          borderLeft: '4px solid #00d4ff',
-          backgroundColor: 'rgba(0, 212, 255, 0.1)',
-          color: '#64b5f6',
-          cursor: 'pointer',
-          transition: 'all 0.3s',
-          marginBottom: '0.5rem'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.color = '#00d4ff'
-          e.target.style.backgroundColor = 'rgba(0, 212, 255, 0.2)'
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.color = '#64b5f6'
-          e.target.style.backgroundColor = 'rgba(0, 212, 255, 0.1)'
-        }}
-        >
-          <span style={{ color: '#00d4ff', marginRight: '0.5rem' }}>🤖</span> AI-Powered Research
-        </li>
-      </ul>
+          Add yourself as a lawyer
+        </button>
+      )}
 
       <style>{`
         @media (min-width: 1024px) {

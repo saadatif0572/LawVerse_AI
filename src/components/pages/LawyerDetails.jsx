@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { doc, getDoc, deleteDoc, updateDoc, addDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, deleteDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../firebase/config";
+import { useAuth } from "../commons/AuthProvider";
 
 const LawyersDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, role, loading: authLoading } = useAuth();
 
   const [lawyer, setLawyer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,16 +17,6 @@ const LawyersDetails = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
 
-  // --- State for adding a new lawyer ---
-  const [newLawyer, setNewLawyer] = useState({
-    name: "",
-    specialization: "",
-    email: "",
-    experience: "",
-    imageUrl: "",
-    description: "",
-  });
-  const [addLoading, setAddLoading] = useState(false);
 
   // Related lawyers state
   const [relatedLawyers, setRelatedLawyers] = useState([]);
@@ -89,16 +81,22 @@ const LawyersDetails = () => {
     });
   };
 
-  // Input change for add form
-  const handleNewInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewLawyer((prev) => ({ ...prev, [name]: value }));
-  };
 
   // 3. Update Function
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!window.confirm("Are you sure you want to save these changes?")) return;
+
+    const isAdmin = role === 'admin';
+    const isOwner = !!user && lawyer?.ownerId && lawyer.ownerId === user.uid;
+    if (!user) {
+      alert('Please sign in to update records.');
+      return;
+    }
+    if (!isAdmin && !isOwner) {
+      alert('You are not allowed to edit this record.');
+      return;
+    }
 
     try {
       const docRef = doc(db, "lawyers", id);
@@ -116,6 +114,17 @@ const LawyersDetails = () => {
   // 4. Delete Function
   const handleDelete = async () => {
     if (!window.confirm("WARNING: Are you sure you want to DELETE this lawyer profile? This cannot be undone.")) return;
+
+    const isAdmin = role === 'admin';
+    const isOwner = !!user && lawyer?.ownerId && lawyer.ownerId === user.uid;
+    if (!user) {
+      alert('Please sign in to delete records.');
+      return;
+    }
+    if (!isAdmin && !isOwner) {
+      alert('You are not allowed to delete this record.');
+      return;
+    }
 
     try {
       await deleteDoc(doc(db, "lawyers", id));
@@ -137,27 +146,6 @@ const LawyersDetails = () => {
     }
   };
 
-  // 6. Add new lawyer
-  const handleAddNew = async (e) => {
-    e.preventDefault();
-    setAddLoading(true);
-    try {
-      const payload = {
-        ...newLawyer,
-        experience: newLawyer.experience ? Number(newLawyer.experience) : newLawyer.experience,
-        createdAt: new Date().toISOString(),
-      };
-      const docRef = await addDoc(collection(db, "lawyers"), payload);
-      setNewLawyer({ name: "", specialization: "", email: "", experience: "", imageUrl: "", description: "" });
-      alert("New lawyer added successfully.");
-      navigate(`/lawyer/${docRef.id}`);
-    } catch (error) {
-      console.error("Error adding lawyer: ", error);
-      alert("Error adding new lawyer.");
-    } finally {
-      setAddLoading(false);
-    }
-  };
 
   // Share functionality
   const handleShare = () => {
@@ -198,6 +186,11 @@ const LawyersDetails = () => {
         <div className="particle"></div>
       </div>
       <div className="max-w-4xl mx-auto relative z-10">
+        {!authLoading && !user && (
+          <div className="mb-6 rounded-md border border-cyan-400/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">
+            Sign in to create, edit, or delete records.
+          </div>
+        )}
         
         {/* Navigation & Admin Controls */}
         <div className="flex justify-between items-center mb-6 text-fade-in">
@@ -216,7 +209,7 @@ const LawyersDetails = () => {
             >
               {refreshing ? "Refreshing..." : "Refresh"}
             </button>
-            {!isEditing && (
+            {!isEditing && user && (role === 'admin' || (lawyer?.ownerId && lawyer.ownerId === user.uid)) && (
                <>
                  <button 
                    onClick={() => setIsEditing(true)}
@@ -391,89 +384,6 @@ const LawyersDetails = () => {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Add New Lawyer */}
-        <div className="bg-[#0d2a52] rounded-2xl shadow-xl overflow-hidden mt-8 border border-cyan-500/40">
-          <form onSubmit={handleAddNew} className="p-8">
-            <h2 className="text-2xl font-bold mb-6 text-cyan-100">Add New Lawyer</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-cyan-200 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={newLawyer.name}
-                  onChange={handleNewInputChange}
-                  className="w-full bg-[#051b3d] border border-cyan-500/40 rounded p-2 text-cyan-100 focus:ring-2 focus:ring-cyan-400"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-cyan-200 mb-1">Specialization</label>
-                <input
-                  type="text"
-                  name="specialization"
-                  value={newLawyer.specialization}
-                  onChange={handleNewInputChange}
-                  className="w-full bg-[#051b3d] border border-cyan-500/40 rounded p-2 text-cyan-100 focus:ring-2 focus:ring-cyan-400"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-cyan-200 mb-1">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={newLawyer.email}
-                  onChange={handleNewInputChange}
-                  className="w-full bg-[#051b3d] border border-cyan-500/40 rounded p-2 text-cyan-100 focus:ring-2 focus:ring-cyan-400"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-cyan-200 mb-1">Experience (Years)</label>
-                <input
-                  type="number"
-                  name="experience"
-                  value={newLawyer.experience}
-                  onChange={handleNewInputChange}
-                  className="w-full bg-[#051b3d] border border-cyan-500/40 rounded p-2 text-cyan-100 focus:ring-2 focus:ring-cyan-400"
-                  min="0"
-                />
-              </div>
-              <div className="col-span-1 md:col-span-2">
-                <label className="block text-sm font-medium text-cyan-200 mb-1">Image URL</label>
-                <input
-                  type="text"
-                  name="imageUrl"
-                  value={newLawyer.imageUrl}
-                  onChange={handleNewInputChange}
-                  className="w-full bg-[#051b3d] border border-cyan-500/40 rounded p-2 text-cyan-100 focus:ring-2 focus:ring-cyan-400"
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="col-span-1 md:col-span-2">
-                <label className="block text-sm font-medium text-cyan-200 mb-1">Bio / Description</label>
-                <textarea
-                  name="description"
-                  value={newLawyer.description}
-                  onChange={handleNewInputChange}
-                  rows="4"
-                  className="w-full bg-[#051b3d] border border-cyan-500/40 rounded p-2 text-cyan-100 focus:ring-2 focus:ring-cyan-400"
-                ></textarea>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                type="submit"
-                className="px-6 py-2 bg-cyan-500 text-[#051b3d] font-medium rounded hover:bg-cyan-400 transition"
-                disabled={addLoading}
-              >
-                {addLoading ? "Adding..." : "Add Lawyer"}
-              </button>
-            </div>
-          </form>
         </div>
 
         {/* Related Lawyers Section */}

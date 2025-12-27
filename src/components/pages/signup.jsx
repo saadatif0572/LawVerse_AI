@@ -2,8 +2,13 @@
 import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom' // Added useNavigate
 import { auth, db } from '../../firebase/config' // Import auth and db
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from 'firebase/auth'
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -48,6 +53,50 @@ const SignUp = () => {
     return newErrors
   }
 
+  const upsertUserProfile = async ({
+    user,
+    provider,
+    firstName = '',
+    lastName = '',
+  }) => {
+    const userRef = doc(db, 'users', user.uid)
+    const existing = await getDoc(userRef)
+
+    const payload = {
+      uid: user.uid,
+      email: user.email || '',
+      displayName: user.displayName || '',
+      photoURL: user.photoURL || '',
+      provider,
+      firstName,
+      lastName,
+      updatedAt: serverTimestamp(),
+    }
+
+    if (!existing.exists()) {
+      payload.createdAt = serverTimestamp()
+      payload.role = 'user'
+    }
+
+    await setDoc(userRef, payload, { merge: true })
+  }
+
+  // Neon glow position based on mouse (matches navbar behavior)
+  const handleNeonMove = (e) => {
+    const el = e.currentTarget
+    const rect = el.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    el.style.setProperty('--neon-mx', `${x}px`)
+    el.style.setProperty('--neon-my', `${y}px`)
+    el.style.setProperty('--neon-opacity', '1')
+  }
+
+  const handleNeonLeave = (e) => {
+    const el = e.currentTarget
+    el.style.setProperty('--neon-opacity', '0')
+  }
+
   const handleSubmit = async (e) => { // Made async
     e.preventDefault()
     setSubmitError('')
@@ -65,13 +114,13 @@ const SignUp = () => {
             displayName: `${formData.firstName} ${formData.lastName}`
         });
 
-        // 3. Save extra details (Names) to Firestore Database
-        await setDoc(doc(db, "users", user.uid), {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            createdAt: new Date()
-        });
+        // 3. Save user to Firestore (idempotent, avoids duplicates)
+        await upsertUserProfile({
+          user,
+          provider: 'password',
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        })
 
         // 4. Redirect
         navigate('/')
@@ -88,6 +137,47 @@ const SignUp = () => {
       }
     } else {
       setErrors(newErrors)
+    }
+  }
+
+  const handleGoogleSignUp = async () => {
+    setSubmitError('')
+
+    if (!formData.agreeTerms) {
+      setErrors(prev => ({ ...prev, agreeTerms: 'You must agree to terms' }))
+      return
+    }
+
+    setLoading(true)
+    try {
+      const provider = new GoogleAuthProvider()
+      const userCredential = await signInWithPopup(auth, provider)
+      const user = userCredential.user
+
+      const displayName = user.displayName || ''
+      const parts = displayName.split(' ').filter(Boolean)
+      const firstName = parts[0] || ''
+      const lastName = parts.slice(1).join(' ') || ''
+
+      await upsertUserProfile({
+        user,
+        provider: 'google',
+        firstName,
+        lastName,
+      })
+
+      navigate('/')
+    } catch (err) {
+      console.error(err)
+      if (err?.code === 'auth/popup-closed-by-user') {
+        setSubmitError('Google sign-in was closed. Please try again.')
+      } else if (err?.code === 'auth/popup-blocked') {
+        setSubmitError('Popup was blocked by the browser. Please allow popups and try again.')
+      } else {
+        setSubmitError(err?.message || 'Google sign-in failed. Please try again.')
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -129,6 +219,36 @@ const SignUp = () => {
                 {submitError}
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={handleGoogleSignUp}
+              disabled={loading}
+              className="neon-hover"
+              onMouseMove={handleNeonMove}
+              onMouseLeave={handleNeonLeave}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                borderRadius: 8,
+                background: 'transparent',
+                color: '#cfefff',
+                fontWeight: 700,
+                border: '1px solid rgba(255,255,255,0.14)',
+                boxShadow: '0 0 0 1px rgba(0,212,255,0.12), 0 0 26px rgba(0,212,255,0.10)',
+                transition: 'transform 120ms ease, box-shadow 200ms ease, border-color 200ms ease',
+                cursor: 'pointer',
+                marginBottom: 10,
+              }}
+            >
+              {loading ? 'Please wait…' : 'Continue with Google'}
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+              <div style={{ color: '#9fbccf', fontSize: 12 }}>or</div>
+              <div style={{ height: 1, flex: 1, background: 'rgba(255,255,255,0.08)' }} />
+            </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', gap: 8 }}>

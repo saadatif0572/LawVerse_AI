@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { onSnapshot, collection } from 'firebase/firestore'
 import { db } from '../../firebase/config'
+import { useAuth } from '../commons/AuthProvider'
 
 const Services = () => {
+  const { user } = useAuth()
   const [lawyersData, setLawyersData] = useState([])
   const [loadingLawyers, setLoadingLawyers] = useState(true)
 
@@ -59,27 +61,32 @@ const Services = () => {
                     </div>
                     <div className="p-6 flex flex-col flex-grow text-gray-100">
                       <h3 className="text-xl font-semibold mb-1 text-cyan-200">{lawyer.name || 'Lawyer Name'}</h3>
-                      <p className="text-cyan-300 text-sm font-medium mb-3 uppercase tracking-wide">
-                        {lawyer.specialization || 'General Practice'}
-                      </p>
-                      <p className="text-gray-300 text-sm mb-4 line-clamp-3 flex-grow">
-                        {lawyer.description || lawyer.bio || 'No description provided.'}
-                      </p>
-                      <div className="mt-auto flex items-center justify-end space-x-2">
-                        <Link to={`/lawyer/${lawyer.id}`}>
-                          <button className="px-4 py-2 bg-cyan-400 text-[#071122] rounded-md font-semibold hover:bg-cyan-300 transition">
-                            View Details
-                          </button>
-                        </Link>
-                        <details className="relative">
-                          <summary className="list-none px-3 py-2 border border-cyan-400 rounded-md text-cyan-200 hover:bg-cyan-400/10 transition cursor-pointer">
-                            View Data
-                          </summary>
-                          <div className="absolute right-0 mt-2 w-72 max-h-64 overflow-auto bg-[#0a1624] border border-cyan-400/60 rounded-md shadow-lg p-3 text-xs text-gray-200 z-10">
-                            <pre className="whitespace-pre-wrap break-words">{JSON.stringify(lawyer, null, 2)}</pre>
+
+                      {user ? (
+                        <>
+                          <p className="text-cyan-300 text-sm font-medium mb-3 uppercase tracking-wide">
+                            {lawyer.specialization || 'General Practice'}
+                          </p>
+                          <p className="text-gray-300 text-sm mb-4 line-clamp-3 flex-grow">
+                            {lawyer.description || lawyer.bio || 'No description provided.'}
+                          </p>
+                          <div className="mt-auto flex items-center justify-end space-x-2">
+                            <Link to={`/lawyer/${lawyer.id}`}>
+                              <button className="px-4 py-2 bg-cyan-400 text-[#071122] rounded-md font-semibold hover:bg-cyan-300 transition">
+                                View Details
+                              </button>
+                            </Link>
+                            <details className="relative">
+                              <summary className="list-none px-3 py-2 border border-cyan-400 rounded-md text-cyan-200 hover:bg-cyan-400/10 transition cursor-pointer">
+                                View Data
+                              </summary>
+                              <div className="absolute right-0 mt-2 w-72 max-h-64 overflow-auto bg-[#0a1624] border border-cyan-400/60 rounded-md shadow-lg p-3 text-xs text-gray-200 z-10">
+                                <pre className="whitespace-pre-wrap break-words">{JSON.stringify(lawyer, null, 2)}</pre>
+                              </div>
+                            </details>
                           </div>
-                        </details>
-                      </div>
+                        </>
+                      ) : null}
                     </div>
                   </div>
                 ))

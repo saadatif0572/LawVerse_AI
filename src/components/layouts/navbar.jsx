@@ -1,27 +1,25 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import DarkModeToggle from '../commons/DarkModeToggle'
-import { onAuthStateChanged, signOut, deleteUser } from 'firebase/auth'
+import { signOut, deleteUser } from 'firebase/auth'
 import { deleteDoc, doc } from 'firebase/firestore'
 import { auth, db } from '../../firebase/config'
+import { useAuth } from '../commons/AuthProvider'
 
 const Navbar = () => {
   const [open, setOpen] = useState(false)
-  const [user, setUser] = useState(null)
   const [authBusy, setAuthBusy] = useState(false)
   const [authError, setAuthError] = useState('')
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const navigate = useNavigate()
   const userMenuRef = useRef(null)
+  const { user, role, loading } = useAuth()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser)
-      setAuthError('')
-      setUserMenuOpen(false)
-    })
-    return () => unsubscribe()
-  }, [])
+    // Close user menu when auth state changes
+    setAuthError('')
+    setUserMenuOpen(false)
+  }, [user?.uid])
 
   useEffect(() => {
     if (!userMenuOpen) return
@@ -132,6 +130,12 @@ const Navbar = () => {
             <Link to="/services" className="neon-hover text-cyan-200 dark:text-cyan-300 hover:text-cyan-100 dark:hover:text-cyan-200 transition-colors" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Services</Link>
             <Link to="/privacy-policy" className="neon-hover text-cyan-200 dark:text-cyan-300 hover:text-cyan-100 dark:hover:text-cyan-200 transition-colors" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Privacy Policy</Link>
             <Link to="/contact" className="neon-hover text-cyan-200 dark:text-cyan-300 hover:text-cyan-100 dark:hover:text-cyan-200 transition-colors" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Contact</Link>
+            {user && (
+              <Link to="/user-dashboard" className="neon-hover text-cyan-200 dark:text-cyan-300 hover:text-cyan-100 dark:hover:text-cyan-200 transition-colors" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Dashboard</Link>
+            )}
+            {user && !loading && role === 'admin' && (
+              <Link to="/admin-dashboard" className="neon-hover text-cyan-200 dark:text-cyan-300 hover:text-cyan-100 dark:hover:text-cyan-200 transition-colors" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Admin</Link>
+            )}
           </nav>
 
           <div className="hidden md:flex md:items-center md:space-x-4">
@@ -234,6 +238,12 @@ const Navbar = () => {
           <Link to="/services" onClick={() => setOpen(false)} className="neon-hover block px-3 py-2 rounded-md text-base font-medium text-cyan-200 dark:text-cyan-300 hover:bg-cyan-500/10 dark:hover:bg-cyan-500/10 transition" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Services</Link>
           <Link to="/privacy-policy" onClick={() => setOpen(false)} className="neon-hover block px-3 py-2 rounded-md text-base font-medium text-cyan-200 dark:text-cyan-300 hover:bg-cyan-500/10 dark:hover:bg-cyan-500/10 transition" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Privacy Policy</Link>
           <Link to="/contact" onClick={() => setOpen(false)} className="neon-hover block px-3 py-2 rounded-md text-base font-medium text-cyan-200 dark:text-cyan-300 hover:bg-cyan-500/10 dark:hover:bg-cyan-500/10 transition" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Contact</Link>
+          {user && (
+            <Link to="/user-dashboard" onClick={() => setOpen(false)} className="neon-hover block px-3 py-2 rounded-md text-base font-medium text-cyan-200 dark:text-cyan-300 hover:bg-cyan-500/10 dark:hover:bg-cyan-500/10 transition" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Dashboard</Link>
+          )}
+          {user && !loading && role === 'admin' && (
+            <Link to="/admin-dashboard" onClick={() => setOpen(false)} className="neon-hover block px-3 py-2 rounded-md text-base font-medium text-cyan-200 dark:text-cyan-300 hover:bg-cyan-500/10 dark:hover:bg-cyan-500/10 transition" onMouseMove={handleNeonMove} onMouseLeave={handleNeonLeave}>Admin</Link>
+          )}
           <div className="mt-2 border-t border-cyan-500 pt-3">
             {user ? (
               <div className="px-3">

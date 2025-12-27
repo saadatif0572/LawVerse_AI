@@ -12,6 +12,11 @@ import PrivacyPolicy from './components/pages/privacypolicy'
 import SignIn from './components/pages/signin'
 import SignUp from './components/pages/signup'
 import LawyersDetails from './components/pages/LawyerDetails'
+import UserDashboard from './components/pages/UserDashboard'
+import AdminDashboard from './components/pages/AdminDashboard'
+import AddLawyer from './components/pages/AddLawyer'
+import ProtectedRoute from './components/commons/ProtectedRoute'
+import AdminRoute from './components/commons/AdminRoute'
 
 const App = () => {
   return (
@@ -44,6 +49,30 @@ const App = () => {
             <Route path="/contact" element={<Contact />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route
+              path="/add-lawyer"
+              element={
+                <ProtectedRoute>
+                  <AddLawyer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/user-dashboard"
+              element={
+                <ProtectedRoute>
+                  <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-dashboard"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
           </Routes>
         </div>
       </div>
